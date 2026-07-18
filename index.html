@@ -365,6 +365,71 @@
             gap: 4px;
         }
         .original-time { font-family: monospace; font-size: 0.7rem; opacity: 0.7; margin-left: 4px;}
+
+        /* --- Mobile Responsive --- */
+        .mobile-header-actions {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        
+        .hamburger-btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .hamburger-btn:active {
+            background: var(--surface-hover);
+        }
+
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 90;
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-backdrop.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        @media (max-width: 900px) {
+            .mobile-header-actions { display: flex; }
+            .header h1 { display: none; }
+            .header { margin-bottom: 24px; }
+            .sidebar {
+                position: fixed;
+                top: 0; bottom: 0; left: 0;
+                z-index: 100;
+                width: 300px;
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+            }
+            .sidebar.open { transform: translateX(0); }
+            .sidebar-backdrop { display: block; pointer-events: none; }
+            .main { padding: 24px 16px; }
+            .trips-grid { grid-template-columns: 1fr; }
+            .dropzone { padding: 32px 16px; }
+            .dropzone i { font-size: 40px; }
+            .dropzone h3 { font-size: 1.1rem; }
+        }
     </style>
 </head>
 <body>
@@ -405,8 +470,26 @@
         </div>
     </aside>
 
+    <!-- BACKDROP PARA MÓVIL -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
     <!-- MAIN CONTENT -->
     <main class="main">
+        <div class="mobile-header-actions">
+            <button class="hamburger-btn" id="hamburger-btn">
+                <i class="ph ph-list"></i>
+            </button>
+            <div class="logo" style="margin: 0;">
+                <a href="https://relay.amazon.com/tours/upcoming?ref=owp_nav_tours" target="_blank" style="text-decoration: none; display: flex;">
+                    <svg viewBox="0 0 150 40" height="28" xmlns="http://www.w3.org/2000/svg">
+                        <text x="0" y="28" font-family="Arial, sans-serif" font-weight="bold" font-size="24" fill="#ffffff" letter-spacing="-0.5">amazon</text>
+                        <text x="92" y="28" font-family="Arial, sans-serif" font-size="24" fill="#00a8e1" letter-spacing="-0.5">relay</text>
+                        <path d="M 5,34 Q 45,44 80,32" fill="none" stroke="#ff9900" stroke-width="2.5" stroke-linecap="round"/>
+                        <path d="M 75,37 L 81,32 L 78,27" fill="none" stroke="#ff9900" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
         <header class="header">
             <h1>Panel de Control</h1>
             <div class="shift-badge" id="shift-label">
@@ -544,6 +627,19 @@
             }
         }
 
+        // --- Interfaz Móvil ---
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+        const hamburgerBtn = document.getElementById('hamburger-btn');
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('open');
+            sidebarBackdrop.classList.toggle('show');
+        }
+
+        hamburgerBtn.addEventListener('click', toggleSidebar);
+        sidebarBackdrop.addEventListener('click', toggleSidebar);
+
         // --- Inicialización e Interfaz ---
         const shiftDateInput = document.getElementById('shift-date');
         const driversTextArea = document.getElementById('drivers-text');
@@ -560,8 +656,14 @@
             driversTextArea.value = savedDrivers;
         }
 
-        shiftDateInput.addEventListener('change', processData);
-        manualShiftInput.addEventListener('change', processData);
+        shiftDateInput.addEventListener('change', () => {
+            processData();
+            if (window.innerWidth <= 900 && sidebar.classList.contains('open')) toggleSidebar();
+        });
+        manualShiftInput.addEventListener('change', () => {
+            processData();
+            if (window.innerWidth <= 900 && sidebar.classList.contains('open')) toggleSidebar();
+        });
         driversTextArea.addEventListener('input', (e) => {
             localStorage.setItem('relay_drivers', e.target.value);
             processData();
@@ -615,6 +717,7 @@
                     currentCSVData = results.data;
                     dropzone.classList.add('hidden');
                     processData();
+                    if (sidebar.classList.contains('open')) toggleSidebar();
                 }
             });
         }
