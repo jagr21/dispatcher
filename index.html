@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relay Dispatcher Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --bg: #09090b;
+            --surface: #18181b;
+            --surface-hover: #27272a;
+            --border: #3f3f46;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+            
+            --amz-orange: #ff9900;
+            --amz-blue: #00a8e1;
+            
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            
+            --radius: 12px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 340px;
+            background-color: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 32px 24px;
+            gap: 32px;
+            overflow-y: auto;
+        }
+
+        .logo {
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-control {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 0.875rem;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+        .form-control:focus {
+            border-color: var(--amz-orange);
+        }
+        
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 160px;
+            line-height: 1.5;
+        }
+
+        .file-upload-btn {
+            background: var(--surface-hover);
+            border: 1px dashed var(--border);
+            color: var(--text-muted);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        .file-upload-btn:hover {
+            color: var(--text-main);
+            border-color: var(--text-main);
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .header {
+            margin-bottom: 32px;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 12px;
+        }
+        .shift-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 168, 225, 0.1);
+            color: var(--amz-blue);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            border: 1px solid rgba(0, 168, 225, 0.2);
+        }
+
+        /* Dropzone */
+        .dropzone {
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 48px;
+            text-align: center;
+            background: var(--surface);
+            transition: all 0.3s;
+            cursor: pointer;
+            margin-bottom: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .dropzone.active, .dropzone:hover {
+            border-color: var(--amz-orange);
+            background: rgba(255, 153, 0, 0.05);
+        }
+        .dropzone i {
+            font-size: 56px;
+            color: var(--amz-blue);
+            margin-bottom: 16px;
+            transition: transform 0.3s;
+        }
+        .dropzone:hover i {
+            transform: translateY(-5px);
+        }
+        .dropzone h3 {
+            font-size: 1.25rem;
+            margin-bottom: 8px;
+        }
+        .dropzone p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+        .dropzone.hidden {
+            display: none;
+        }
+
+        /* Trips Grid */
+        .trips-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 24px;
+        }
+
+        .trip-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .trip-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            border-color: #52525b;
+        }
+
+        .trip-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .driver-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-main);
+        }
+        .trip-id {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-family: monospace;
+            margin-top: 4px;
+        }
+        .trip-link {
+            color: var(--amz-blue);
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: color 0.2s;
+        }
+        .trip-link:hover {
+            color: #38bdf8;
+            text-decoration: underline;
+        }
+
+        .final-arrival {
+            font-size: 1.1rem;
+            color: var(--amz-orange);
+            font-weight: 700;
+            margin-top: 8px;
+            text-align: right;
+            line-height: 1.3;
+        }
+
+        .status-pill {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
+        }
+        .s-ongoing { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .s-upcoming { background: rgba(0, 168, 225, 0.15); color: var(--amz-blue); }
+        .s-finished { background: rgba(161, 161, 170, 0.15); color: #a1a1aa; }
+
+        .alert-item {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 3px solid var(--amz-orange);
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            color: #fcd34d;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            line-height: 1.4;
+        }
+        .alert-item strong {
+            color: #fff;
+        }
+
+        /* Collapsible Stops */
+        .stops-toggle {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+            margin-top: auto;
+        }
+        .stops-toggle:hover {
+            background: var(--surface-hover);
+        }
+
+        .stops-list {
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 16px;
+            padding: 16px;
+            background: var(--bg);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .stops-list.show {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .stop-item {
+            display: flex;
+            gap: 16px;
+            position: relative;
+        }
+        .stop-item:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 24px;
+            bottom: -16px;
+            width: 2px;
+            background: var(--border);
+        }
+        .stop-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--bg);
+            border: 2px solid var(--text-muted);
+            margin-top: 4px;
+            position: relative;
+            z-index: 1;
+        }
+        .stop-item:first-child .stop-dot { border-color: var(--success); }
+        .stop-item:last-child .stop-dot { border-color: var(--danger); }
+        
+        .stop-content { flex: 1; }
+        .stop-name { font-weight: 600; font-size: 0.875rem; margin-bottom: 4px; }
+        .stop-times {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .original-time { font-family: monospace; font-size: 0.7rem; opacity: 0.7; margin-left: 4px;}
+    </style>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <!-- Brand Logo -->
+        <div class="logo">
+            <a href="https://relay.amazon.com/tours/upcoming?ref=owp_nav_tours" target="_blank" style="text-decoration: none; display: flex;">
+                <svg viewBox="0 0 150 40" height="36" xmlns="http://www.w3.org/2000/svg">
+                    <text x="0" y="28" font-family="Arial, sans-serif" font-weight="bold" font-size="24" fill="#ffffff" letter-spacing="-0.5">amazon</text>
+                    <text x="92" y="28" font-family="Arial, sans-serif" font-size="24" fill="#00a8e1" letter-spacing="-0.5">relay</text>
+                    <path d="M 5,34 Q 45,44 80,32" fill="none" stroke="#ff9900" stroke-width="2.5" stroke-linecap="round"/>
+                    <path d="M 75,37 L 81,32 L 78,27" fill="none" stroke="#ff9900" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </a>
+        </div>
+
+        <div class="form-group">
+            <div class="section-title"><i class="ph ph-calendar"></i> Configuración de Turno</div>
+            <label style="font-size: 0.875rem; color: var(--text-muted);">Fecha de inicio (Turno: 9:00 PM a 2:00 AM)</label>
+            <input type="date" id="shift-date" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+            <div class="section-title"><i class="ph ph-sliders"></i> Ajuste Fino de Horas</div>
+            <label style="font-size: 0.875rem; color: var(--text-muted);">Si sientes que los viajes están 1 hora adelantados, ajústalo aquí:</label>
+            <input type="number" id="manual-hour-shift" class="form-control" value="-1" step="1" style="font-weight: bold; color: var(--amz-orange);">
+        </div>
+
+        <div class="form-group">
+            <div class="section-title"><i class="ph ph-users"></i> Mis Conductores</div>
+            <textarea id="drivers-text" class="form-control" placeholder="Escribe un conductor por línea..."></textarea>
+            
+            <label class="file-upload-btn" for="drivers-txt">
+                <i class="ph ph-upload-simple"></i> Cargar desde .txt
+            </label>
+            <input type="file" id="drivers-txt" accept=".txt" style="display: none;">
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+        <header class="header">
+            <h1>Panel de Control</h1>
+            <div class="shift-badge" id="shift-label">
+                <i class="ph ph-clock"></i> Turno: Selecciona una fecha
+            </div>
+        </header>
+
+        <!-- Drag & Drop Zone -->
+        <div class="dropzone" id="dropzone">
+            <i class="ph ph-file-csv"></i>
+            <h3>Arrastra tu archivo Trips.csv aquí</h3>
+            <p>O haz clic para explorar en tus carpetas</p>
+            <input type="file" id="csv-file" accept=".csv" style="display: none;">
+        </div>
+
+        <!-- Trips Container -->
+        <div class="trips-grid" id="trips-container">
+            <!-- Cards will be injected here -->
+        </div>
+    </main>
+
+    <script>
+        let currentCSVData = null;
+
+        function normalizeText(text) {
+            if (!text) return "";
+            return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        }
+
+        function getVal(row, searchStr) {
+            const target = searchStr.replace(/\s+/g, ' ').trim().toLowerCase();
+            for (const key in row) {
+                if (key.replace(/\s+/g, ' ').trim().toLowerCase() === target) {
+                    return row[key];
+                }
+            }
+            return null;
+        }
+        
+        function formatVET(vetUtcDate) {
+            if (!vetUtcDate) return "N/A";
+            
+            let h = vetUtcDate.getUTCHours();
+            let m = vetUtcDate.getUTCMinutes();
+            let ampm = h >= 12 ? 'PM' : 'AM';
+            
+            h = h % 12;
+            if (h === 0) h = 12;
+            
+            let hStr = h.toString().padStart(2, '0');
+            let mStr = m.toString().padStart(2, '0');
+            
+            return `${hStr}:${mStr} ${ampm}`;
+        }
+
+        function parseAmazonDate(dateStr, timeStr, offsetStr) {
+            if (!dateStr || !timeStr) return null;
+            
+            let year, month, day;
+            let dMatch = dateStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+            if (dMatch) {
+                year = parseInt(dMatch[1], 10);
+                month = parseInt(dMatch[2], 10) - 1;
+                day = parseInt(dMatch[3], 10);
+            } else {
+                dMatch = dateStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
+                if (dMatch) {
+                    month = parseInt(dMatch[1], 10) - 1;
+                    day = parseInt(dMatch[2], 10);
+                    year = parseInt(dMatch[3], 10);
+                    if (year < 100) year += 2000;
+                } else {
+                    return null;
+                }
+            }
+
+            const tMatch = timeStr.match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?/i);
+            if (!tMatch) return null;
+            
+            let hour = parseInt(tMatch[1], 10);
+            let min = parseInt(tMatch[2], 10);
+            let ampm = tMatch[3] ? tMatch[3].toUpperCase() : null;
+
+            if (ampm === 'PM' && hour < 12) hour += 12;
+            if (ampm === 'AM' && hour === 12) hour = 0;
+            
+            let offset = NaN;
+            let usedSource = "Ninguno";
+            
+            let tzMatch = timeStr.match(/(EDT|EST|CDT|CST|MDT|MST|PDT|PST|AST|HST|AKST|AKDT)/i);
+            if (tzMatch) {
+                const tzOffsets = {
+                    'EDT': -4, 'EST': -5,
+                    'CDT': -5, 'CST': -6,
+                    'MDT': -6, 'MST': -7,
+                    'PDT': -7, 'PST': -8,
+                    'AST': -4, 'HST': -10,
+                    'AKDT': -8, 'AKST': -9
+                };
+                offset = tzOffsets[tzMatch[1].toUpperCase()];
+                usedSource = `tz:${tzMatch[1].toUpperCase()}`;
+            }
+            
+            if (isNaN(offset) && offsetStr !== null && offsetStr !== undefined && offsetStr !== "") {
+                offset = parseFloat(offsetStr);
+                usedSource = `col:${offsetStr}`;
+            }
+            
+            let manualShift = parseInt(document.getElementById('manual-hour-shift').value, 10);
+            if (isNaN(manualShift)) manualShift = 0;
+
+            let shiftHours = 0;
+            if (!isNaN(offset)) {
+                shiftHours = (-4) - offset;
+            }
+            
+            // Aplicar el ajuste manual (por defecto restará 1 hora a todo según petición del usuario)
+            shiftHours += manualShift;
+            
+            const dateObj = new Date(Date.UTC(year, month, day, hour + shiftHours, min));
+            
+            dateObj.shiftDebug = `[Ajuste final: ${shiftHours > 0 ? '+' : ''}${shiftHours}h]`;
+            return dateObj;
+        }
+
+        function toggleStops(btn) {
+            const list = btn.nextElementSibling;
+            const icon = btn.querySelector('i');
+            if (list.classList.contains('show')) {
+                list.classList.remove('show');
+                icon.classList.replace('ph-caret-up', 'ph-caret-down');
+            } else {
+                list.classList.add('show');
+                icon.classList.replace('ph-caret-down', 'ph-caret-up');
+            }
+        }
+
+        // --- Inicialización e Interfaz ---
+        const shiftDateInput = document.getElementById('shift-date');
+        const driversTextArea = document.getElementById('drivers-text');
+        const manualShiftInput = document.getElementById('manual-hour-shift');
+        
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        shiftDateInput.value = `${yyyy}-${mm}-${dd}`;
+
+        const savedDrivers = localStorage.getItem('relay_drivers');
+        if (savedDrivers) {
+            driversTextArea.value = savedDrivers;
+        }
+
+        shiftDateInput.addEventListener('change', processData);
+        manualShiftInput.addEventListener('change', processData);
+        driversTextArea.addEventListener('input', (e) => {
+            localStorage.setItem('relay_drivers', e.target.value);
+            processData();
+        });
+        document.getElementById('drivers-txt').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    driversTextArea.value = ev.target.result;
+                    localStorage.setItem('relay_drivers', ev.target.result);
+                    processData();
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('csv-file');
+
+        dropzone.addEventListener('click', () => fileInput.click());
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, preventDefaults, false);
+        });
+        function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, () => dropzone.classList.add('active'), false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, () => dropzone.classList.remove('active'), false);
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            let dt = e.dataTransfer;
+            if (dt.files.length) handleCSVFile(dt.files[0]);
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) handleCSVFile(e.target.files[0]);
+        });
+
+        function handleCSVFile(file) {
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                alert("Por favor, sube un archivo .csv válido.");
+                return;
+            }
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    currentCSVData = results.data;
+                    dropzone.classList.add('hidden');
+                    processData();
+                }
+            });
+        }
+
+        function extractTripInfo(row) {
+            let start = null;
+            let end = null;
+            let stops = [];
+            
+            for (let i = 1; i <= 15; i++) {
+                const stopName = getVal(row, `Stop ${i}`);
+                if (!stopName) continue;
+                
+                const arrDate = getVal(row, `Stop ${i} Planned Arrival Date`);
+                const arrTime = getVal(row, `Stop ${i} Planned Arrival Time`);
+                const depDate = getVal(row, `Stop ${i} Planned Departure Date`);
+                const depTime = getVal(row, `Stop ${i} Planned Departure Time`);
+                
+                const utcOffset = getVal(row, `Stop ${i} UTC Offset`) 
+                               || getVal(row, `Stop ${i} Planned Arrival UTC Offset`) 
+                               || getVal(row, `Stop ${i} Planned Departure UTC Offset`);
+                
+                let arrival = null;
+                let arrDebug = "";
+                if (arrDate && arrTime) {
+                    let parsed = parseAmazonDate(arrDate, arrTime, utcOffset);
+                    if (parsed) {
+                        arrival = parsed;
+                        arrDebug = parsed.shiftDebug;
+                    }
+                }
+                let arrivalOriginal = arrTime ? `${arrTime} ${arrDebug}` : null;
+                
+                let departure = null;
+                let depDebug = "";
+                if (depDate && depTime) {
+                    let parsed = parseAmazonDate(depDate, depTime, utcOffset);
+                    if (parsed) {
+                        departure = parsed;
+                        depDebug = parsed.shiftDebug;
+                    }
+                }
+                let departureOriginal = depTime ? `${depTime} ${depDebug}` : null;
+                
+                if (i === 1) start = departure || arrival; 
+                if (arrival || departure) end = arrival || departure; 
+                
+                stops.push({ 
+                    index: i, 
+                    name: stopName, 
+                    arrival, arrivalOriginal, dateArr: arrDate,
+                    departure, departureOriginal, dateDep: depDate
+                });
+            }
+            return { start, end, stops };
+        }
+
+        function processData() {
+            if (!currentCSVData) return; 
+
+            const shiftDateStr = shiftDateInput.value;
+            if (!shiftDateStr) return;
+
+            let [y, m, d] = shiftDateStr.split('-');
+            const shiftStartUTC = new Date(Date.UTC(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10), 21, 0));
+            const shiftEndUTC = new Date(shiftStartUTC.getTime() + (5 * 60 * 60 * 1000));
+
+            const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+            const startStr = `${days[shiftStartUTC.getUTCDay()]} ${shiftStartUTC.getUTCDate()}`;
+            const endStr = `${days[shiftEndUTC.getUTCDay()]} ${shiftEndUTC.getUTCDate()}`;
+            document.getElementById('shift-label').innerHTML = `<i class="ph ph-clock"></i> Turno: de ${startStr} a ${endStr}`;
+
+            const driversText = driversTextArea.value;
+            const myDrivers = driversText.split('\n')
+                .map(drv => normalizeText(drv))
+                .filter(drv => drv.length > 0);
+
+            const container = document.getElementById('trips-container');
+            container.innerHTML = ''; 
+
+            const tripsToRender = [];
+
+            currentCSVData.forEach(row => {
+                const driverNameRaw = getVal(row, 'Driver Name') || row['Driver Name'] || '';
+                const driverName = normalizeText(driverNameRaw);
+                if (!driverName) return;
+
+                let isMyDriver = myDrivers.length === 0 ? true : false;
+                if (myDrivers.length > 0) {
+                    isMyDriver = myDrivers.some(md => driverName.includes(md) || md.includes(driverName));
+                }
+                if (!isMyDriver && myDrivers.length > 0) return;
+
+                const { start, end, stops } = extractTripInfo(row);
+                
+                let overlaps = false;
+                const bufferTime = 60 * 60 * 1000;
+                
+                if (start && end) {
+                    const adjustedStart = new Date(start.getTime() - bufferTime);
+                    if (adjustedStart.getTime() <= shiftEndUTC.getTime() && end.getTime() >= shiftStartUTC.getTime()) {
+                        overlaps = true;
+                    }
+                } else {
+                    overlaps = true; 
+                }
+
+                if (!overlaps) return;
+
+                let firstArrivalObj = null;
+                for (let s of stops) {
+                    if (s.arrival) {
+                        firstArrivalObj = s;
+                        break;
+                    }
+                }
+
+                let firstArrivalStr = "N/A";
+                let reminderHtml = "";
+                
+                if (firstArrivalObj) {
+                    firstArrivalStr = formatVET(firstArrivalObj.arrival);
+                    const alertTimeUTC = new Date(firstArrivalObj.arrival.getTime() - bufferTime);
+                    
+                    reminderHtml = `
+                        <div class="alert-item">
+                            <i class="ph ph-phone-call" style="font-size: 1.2rem;"></i> 
+                            <div>Recordatorio: Llamar a las <strong>${formatVET(alertTimeUTC)}</strong> (1 hora antes)</div>
+                        </div>
+                    `;
+                }
+
+                let status = "Próximo";
+                let statusClass = "s-upcoming";
+                
+                const browserNow = new Date();
+                const nowOffsetHours = browserNow.getTimezoneOffset() / 60;
+                const vetNowUTC = new Date(browserNow.getTime() + (nowOffsetHours * 60 * 60 * 1000) - (4 * 60 * 60 * 1000));
+                
+                if (start && start.getTime() <= vetNowUTC.getTime() && end && end.getTime() >= vetNowUTC.getTime()) {
+                    status = "En Curso";
+                    statusClass = "s-ongoing";
+                } else if (end && end.getTime() < vetNowUTC.getTime()) {
+                    status = "Finalizado";
+                    statusClass = "s-finished";
+                }
+                
+                const rawTripId = getVal(row, 'Trip ID') || '';
+                const tripIdHtml = rawTripId 
+                    ? `<a href="https://relay.amazon.com/tours/upcoming?ref=owp_nav_tours&usrtb=START_DATE&usrtdrctn=asc&uq=${encodeURIComponent(rawTripId)}" target="_blank" class="trip-link">${rawTripId} <i class="ph ph-arrow-square-out" style="font-size: 0.8rem;"></i></a>`
+                    : 'N/A';
+
+                tripsToRender.push({ row, driverNameRaw, tripIdHtml, start, end, stops, status, statusClass, firstArrivalStr, reminderHtml });
+            });
+
+            tripsToRender.sort((a, b) => (a.start ? a.start.getTime() : 0) - (b.start ? b.start.getTime() : 0));
+
+            tripsToRender.forEach(trip => {
+                const card = document.createElement('div');
+                card.className = 'trip-card';
+
+                let stopsHtml = trip.stops.map(stop => `
+                    <div class="stop-item">
+                        <div class="stop-dot"></div>
+                        <div class="stop-content">
+                            <div class="stop-name">${stop.name}</div>
+                            <div class="stop-times">
+                                ${stop.arrival ? `
+                                    <span style="color: var(--amz-orange); font-weight: 600;">
+                                        Arr: ${formatVET(stop.arrival)} 
+                                        <span class="original-time">(${stop.dateArr} ${stop.arrivalOriginal})</span>
+                                    </span>
+                                ` : ''}
+                                ${stop.departure ? `
+                                    <span>
+                                        Dep: ${formatVET(stop.departure)} 
+                                        <span class="original-time">(${stop.dateDep} ${stop.departureOriginal})</span>
+                                    </span>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                card.innerHTML = `
+                    <div class="trip-header">
+                        <div>
+                            <div class="driver-name"><i class="ph ph-user-circle"></i> ${trip.driverNameRaw}</div>
+                            <div class="trip-id">ID: ${trip.tripIdHtml}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="status-pill ${trip.statusClass}">${trip.status}</div>
+                            <div class="final-arrival">
+                                Arrival a las ${trip.firstArrivalStr}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${trip.reminderHtml}
+
+                    <button class="stops-toggle" onclick="toggleStops(this)">
+                        Ver Itinerario (${trip.stops.length} paradas) <i class="ph ph-caret-down"></i>
+                    </button>
+                    <div class="stops-list">
+                        ${stopsHtml}
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
