@@ -88,13 +88,15 @@
             border-color: var(--amz-orange);
         }
         
-        input[type="date"]::-webkit-calendar-picker-indicator {
+        input[type="date"]::-webkit-calendar-picker-indicator,
+        input[type="time"]::-webkit-calendar-picker-indicator {
             filter: invert(1);
             cursor: pointer;
             opacity: 0.8;
             transition: opacity 0.2s;
         }
-        input[type="date"]::-webkit-calendar-picker-indicator:hover {
+        input[type="date"]::-webkit-calendar-picker-indicator:hover,
+        input[type="time"]::-webkit-calendar-picker-indicator:hover {
             opacity: 1;
         }
 
@@ -366,6 +368,29 @@
         }
         .original-time { font-family: monospace; font-size: 0.7rem; opacity: 0.7; margin-left: 4px;}
 
+        .preset-select {
+            background-color: rgba(0, 168, 225, 0.1);
+            color: var(--amz-blue);
+            border: 1px solid rgba(0, 168, 225, 0.3);
+            border-radius: 20px;
+            padding: 8px 32px 8px 16px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="%2300a8e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            outline: none;
+        }
+        .preset-select:hover {
+            background-color: rgba(0, 168, 225, 0.15);
+            border-color: rgba(0, 168, 225, 0.5);
+        }
+        .preset-select:focus {
+            box-shadow: 0 0 0 2px rgba(0, 168, 225, 0.2);
+        }
+
         /* --- Mobile Responsive --- */
         .mobile-header-actions {
             display: none;
@@ -490,10 +515,25 @@
                 </a>
             </div>
         </div>
-        <header class="header">
-            <h1>Panel de Control</h1>
-            <div class="shift-badge" id="shift-label">
-                <i class="ph ph-clock"></i> Turno: Selecciona una fecha
+        <header class="header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+            <div>
+                <h1>Panel de Control</h1>
+                <div class="shift-badge" id="shift-label">
+                    <i class="ph ph-clock"></i> Turno: Selecciona una fecha
+                </div>
+            </div>
+            
+            <div class="shift-selector" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <select id="shift-preset" class="form-control preset-select">
+                    <option value="night">Mi Turno (9:00 PM - 2:00 AM)</option>
+                    <option value="allday">Todo el Día (24 hrs)</option>
+                    <option value="custom">Personalizado...</option>
+                </select>
+                <div id="custom-time-container" style="display: none; gap: 8px; align-items: center;">
+                    <input type="time" id="custom-start" class="form-control" value="08:00" style="padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; background: rgba(0, 168, 225, 0.1); border-color: rgba(0, 168, 225, 0.3);">
+                    <span style="color: var(--text-muted); font-size: 0.875rem;">a</span>
+                    <input type="time" id="custom-end" class="form-control" value="16:00" style="padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; background: rgba(0, 168, 225, 0.1); border-color: rgba(0, 168, 225, 0.3);">
+                </div>
             </div>
         </header>
 
@@ -664,6 +704,14 @@
             processData();
             if (window.innerWidth <= 900 && sidebar.classList.contains('open')) toggleSidebar();
         });
+        document.getElementById('shift-preset').addEventListener('change', (e) => {
+            const isCustom = e.target.value === 'custom';
+            document.getElementById('custom-time-container').style.display = isCustom ? 'flex' : 'none';
+            processData();
+        });
+        document.getElementById('custom-start').addEventListener('change', processData);
+        document.getElementById('custom-end').addEventListener('change', processData);
+        
         driversTextArea.addEventListener('input', (e) => {
             localStorage.setItem('relay_drivers', e.target.value);
             processData();
@@ -782,13 +830,54 @@
             if (!shiftDateStr) return;
 
             let [y, m, d] = shiftDateStr.split('-');
-            const shiftStartUTC = new Date(Date.UTC(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10), 21, 0));
-            const shiftEndUTC = new Date(shiftStartUTC.getTime() + (5 * 60 * 60 * 1000));
+            y = parseInt(y, 10);
+            m = parseInt(m, 10) - 1;
+            d = parseInt(d, 10);
+            
+            const preset = document.getElementById('shift-preset').value;
+            let shiftStartUTC, shiftEndUTC;
+            let timeStr = "";
+            
+            if (preset === 'night') {
+                shiftStartUTC = new Date(Date.UTC(y, m, d, 21, 0));
+                shiftEndUTC = new Date(shiftStartUTC.getTime() + (5 * 60 * 60 * 1000));
+                timeStr = "9:00 PM a 2:00 AM";
+            } else if (preset === 'allday') {
+                shiftStartUTC = new Date(Date.UTC(y, m, d, 0, 0));
+                shiftEndUTC = new Date(shiftStartUTC.getTime() + (24 * 60 * 60 * 1000) - 1);
+                timeStr = "Todo el día";
+            } else if (preset === 'custom') {
+                const startVal = document.getElementById('custom-start').value || "00:00";
+                const endVal = document.getElementById('custom-end').value || "23:59";
+                
+                const [hStart, mStart] = startVal.split(':').map(Number);
+                const [hEnd, mEnd] = endVal.split(':').map(Number);
+                
+                shiftStartUTC = new Date(Date.UTC(y, m, d, hStart, mStart));
+                shiftEndUTC = new Date(Date.UTC(y, m, d, hEnd, mEnd));
+                
+                if (shiftEndUTC.getTime() < shiftStartUTC.getTime()) {
+                    shiftEndUTC = new Date(shiftEndUTC.getTime() + (24 * 60 * 60 * 1000));
+                }
+                
+                const formatTime = (hh, mm) => {
+                    let ampm = hh >= 12 ? 'PM' : 'AM';
+                    let h12 = hh % 12;
+                    if (h12 === 0) h12 = 12;
+                    return `${h12}:${mm.toString().padStart(2,'0')} ${ampm}`;
+                };
+                timeStr = `${formatTime(hStart, mStart)} a ${formatTime(hEnd, mEnd)}`;
+            }
 
             const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
             const startStr = `${days[shiftStartUTC.getUTCDay()]} ${shiftStartUTC.getUTCDate()}`;
             const endStr = `${days[shiftEndUTC.getUTCDay()]} ${shiftEndUTC.getUTCDate()}`;
-            document.getElementById('shift-label').innerHTML = `<i class="ph ph-clock"></i> Turno: de ${startStr} a ${endStr}`;
+            
+            if (preset === 'night' || (preset === 'custom' && shiftStartUTC.getUTCDate() !== shiftEndUTC.getUTCDate())) {
+                document.getElementById('shift-label').innerHTML = `<i class="ph ph-clock"></i> de ${startStr} a ${endStr} (${timeStr})`;
+            } else {
+                document.getElementById('shift-label').innerHTML = `<i class="ph ph-clock"></i> ${startStr} (${timeStr})`;
+            }
 
             const driversText = driversTextArea.value;
             const myDrivers = driversText.split('\n')
