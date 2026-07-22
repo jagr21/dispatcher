@@ -37,16 +37,33 @@
             overflow: hidden;
         }
 
-        /* Sidebar */
+        /* Scrollbar Elegante */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
         .sidebar {
             width: 340px;
             background-color: var(--surface);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
+            flex-shrink: 0;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 100;
+        }
+        .sidebar-scrollable {
+            display: flex;
+            flex-direction: column;
             padding: 32px 24px;
             gap: 32px;
             overflow-y: auto;
+            flex: 1;
+        }
+        .sidebar.collapsed {
+            margin-left: -340px;
         }
 
         .logo {
@@ -139,6 +156,10 @@
 
         .header {
             margin-bottom: 32px;
+            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        body:has(.sidebar.collapsed) .header {
+            padding-left: 24px;
         }
         .header h1 {
             font-size: 2.5rem;
@@ -157,6 +178,236 @@
             font-size: 0.875rem;
             font-weight: 600;
             border: 1px solid rgba(0, 168, 225, 0.2);
+        }
+
+        /* Timeline */
+        .timeline-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 32px;
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .timeline-container.show {
+            display: flex;
+            animation: fadeIn 0.5s ease;
+        }
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .timeline-title {
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-main);
+        }
+        .timeline-legend {
+            display: flex;
+            gap: 16px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .legend-dot.s-finished { background: var(--text-muted); }
+        .legend-dot.s-ongoing { background: var(--success); }
+        .legend-dot.s-upcoming { background: var(--amz-blue); }
+        
+        .timeline-track {
+            position: relative;
+            height: 48px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            border: 1px inset rgba(255,255,255,0.05);
+        }
+        
+        .timeline-block {
+            position: absolute;
+            top: 4px;
+            bottom: 4px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            opacity: 0.85;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .timeline-block:hover {
+            opacity: 1;
+            transform: scaleY(1.05);
+            z-index: 20;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        
+        .tb-upcoming { background: linear-gradient(90deg, rgba(0, 168, 225, 0.4), rgba(0, 168, 225, 0.8)); border: 1px solid var(--amz-blue); }
+        .tb-ongoing { background: linear-gradient(90deg, rgba(16, 185, 129, 0.4), rgba(16, 185, 129, 0.8)); border: 1px solid var(--success); }
+        .tb-finished { background: linear-gradient(90deg, rgba(161, 161, 170, 0.2), rgba(161, 161, 170, 0.5)); border: 1px solid var(--text-muted); }
+
+        .timeline-block-text {
+            color: white; font-weight: 700; font-size: 0.75rem; 
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 6px;
+            max-height: 100%; display: flex; align-items: center;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+
+        .timeline-block .tooltip {
+            position: absolute;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s, bottom 0.2s;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .timeline-block:hover .tooltip {
+            opacity: 1;
+            bottom: 125%;
+        }
+        .timeline-block .tooltip.tooltip-down {
+            bottom: auto;
+            top: 110%;
+        }
+        .timeline-block:hover .tooltip.tooltip-down {
+            bottom: auto;
+            top: 125%;
+        }
+
+        .timeline-now {
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 2px;
+            background: var(--amz-orange);
+            z-index: 30;
+            box-shadow: 0 0 10px var(--amz-orange);
+            cursor: pointer;
+        }
+        .timeline-now::after {
+            content: 'AHORA';
+            position: absolute;
+            top: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--amz-orange);
+            color: #000;
+            font-size: 0.6rem;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        
+        .tooltip-now {
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s, bottom 0.2s;
+            border: 1px solid var(--amz-orange);
+            box-shadow: 0 4px 15px rgba(255, 153, 0, 0.3);
+            z-index: 100;
+        }
+        .timeline-now:hover .tooltip-now {
+            opacity: 1;
+            bottom: 135%;
+        }
+
+        /* Modal 24h */
+        .modal-24h-backdrop {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            backdrop-filter: blur(6px);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-24h-backdrop.show { display: flex; }
+        .modal-24h-content {
+            width: 95vw;
+            max-width: 1200px;
+            height: 85vh;
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow: hidden;
+        }
+        .modal-close-btn {
+            position: absolute;
+            top: 16px; right: 16px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .modal-close-btn:hover { color: var(--text-main); }
+        .modal-24h-track-container {
+            width: 100%;
+            flex: 1;
+            min-height: 0;
+            overflow-x: auto;
+            overflow-y: hidden;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.2);
+            border: 1px inset rgba(255,255,255,0.05);
+            cursor: grab;
+            padding: 16px 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-24h-track-container:active { cursor: grabbing; }
+        .modal-24h-track {
+            position: relative;
+            flex: 1;
+            flex-shrink: 0;
+            height: 100%;
+            width: 21600px; /* 100px por hora * 216 horas (9 días) */
+            margin: 0 24px;
+        }
+
+        .timeline-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: monospace;
         }
 
         /* Dropzone */
@@ -202,7 +453,7 @@
         /* Trips Grid */
         .trips-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            grid-template-columns: repeat(var(--grid-cols, 3), minmax(0, 1fr));
             gap: 24px;
         }
 
@@ -367,6 +618,145 @@
             gap: 4px;
         }
         .original-time { font-family: monospace; font-size: 0.7rem; opacity: 0.7; margin-left: 4px;}
+        
+        /* Colored Cards based on switches/checklists */
+        .trip-card.bg-success { background-color: rgba(16, 185, 129, 0.25); border-color: var(--success); }
+        .trip-card.bg-warning { background-color: rgba(245, 158, 11, 0.25); border-color: var(--warning); }
+        .trip-card.bg-danger { background-color: rgba(239, 68, 68, 0.25); border-color: var(--danger); }
+
+        /* Hide logic toggles */
+        body.expand-checklists .management-panel { display: flex !important; }
+        body.expand-checklists .management-toggle { display: none !important; }
+        body.hide-notifications .notifications-container { display: none !important; }
+
+        /* Notifications */
+        .notifications-container {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: none;
+        }
+        .notification-item {
+            background: var(--surface);
+            border: 1px solid var(--amz-orange);
+            border-left: 4px solid var(--amz-orange);
+            border-radius: 8px;
+            padding: 16px;
+            color: var(--text-main);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            width: 320px;
+            pointer-events: auto;
+            animation: slideInLeft 0.4s ease;
+            position: relative;
+        }
+        .notification-item .close-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+        .notification-item .close-btn:hover { color: var(--text-main); }
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-100%); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Management Panel */
+        .management-toggle {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+            margin-top: 16px;
+        }
+        .management-toggle:hover { background: var(--surface-hover); }
+
+        .management-panel {
+            margin-top: 8px;
+            padding: 16px;
+            background: var(--bg);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .management-panel.show {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+        .checklist-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .checklist-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .checklist-group label:has(input:checked) {
+            color: var(--success);
+            font-weight: 600;
+        }
+        .checklist-group input[type="checkbox"] {
+            accent-color: var(--success);
+            width: 16px; height: 16px;
+        }
+        
+        .map-link {
+            text-decoration: none;
+            color: var(--amz-blue);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .map-link i {
+            font-size: 1.25rem;
+            transition: transform 0.2s, color 0.2s;
+        }
+        .map-link:hover i {
+            transform: scale(1.1);
+            color: #4dc2f0;
+        }
+        
+        .switches-group {
+            display: flex;
+            gap: 16px;
+            border-top: 1px solid var(--border);
+            padding-top: 12px;
+            margin-top: 4px;
+        }
+        .switch-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            color: var(--danger);
+            font-weight: 600;
+        }
+        .switch-label input[type="checkbox"] {
+            accent-color: var(--danger);
+            width: 16px; height: 16px;
+        }
 
         .preset-select {
             background-color: rgba(0, 168, 225, 0.1);
@@ -399,6 +789,34 @@
             margin-bottom: 24px;
         }
         
+        .desktop-toggle-btn {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s, border-radius 0.3s;
+            z-index: 110;
+        }
+        .desktop-toggle-btn:hover { background: var(--surface-hover); }
+        
+        .sidebar.collapsed .desktop-toggle-btn {
+            right: -44px;
+            border-radius: 0 8px 8px 0;
+            background: var(--surface);
+            border-left: none;
+            box-shadow: 4px 0 12px rgba(0,0,0,0.3);
+        }
+
         .hamburger-btn {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -435,6 +853,7 @@
         }
 
         @media (max-width: 900px) {
+            .desktop-toggle-btn { display: none !important; }
             .mobile-header-actions { display: flex; }
             .header h1 { display: none; }
             .header { margin-bottom: 24px; }
@@ -443,6 +862,7 @@
                 top: 0; bottom: 0; left: 0;
                 z-index: 100;
                 width: 300px;
+                margin-left: 0 !important;
                 transform: translateX(-100%);
                 transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 box-shadow: 4px 0 24px rgba(0,0,0,0.5);
@@ -450,7 +870,7 @@
             .sidebar.open { transform: translateX(0); }
             .sidebar-backdrop { display: block; pointer-events: none; }
             .main { padding: 24px 16px; }
-            .trips-grid { grid-template-columns: 1fr; }
+            .trips-grid { grid-template-columns: 1fr !important; }
             .dropzone { padding: 32px 16px; }
             .dropzone i { font-size: 40px; }
             .dropzone h3 { font-size: 1.1rem; }
@@ -459,10 +879,14 @@
 </head>
 <body>
     <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <!-- Brand Logo -->
-        <div class="logo">
-            <a href="https://relay.amazon.com/tours/upcoming?ref=owp_nav_tours" target="_blank" style="text-decoration: none; display: flex;">
+    <aside class="sidebar" id="sidebar">
+        <button class="desktop-toggle-btn" onclick="document.getElementById('sidebar').classList.toggle('collapsed')" title="Mostrar/Ocultar Menú">
+            <i class="ph ph-list"></i>
+        </button>
+        <div class="sidebar-scrollable">
+            <!-- Brand Logo -->
+            <div class="logo">
+                <a href="https://relay.amazon.com/tours/upcoming?ref=owp_nav_tours" target="_blank" style="text-decoration: none; display: flex;">
                 <svg viewBox="0 0 150 40" height="36" xmlns="http://www.w3.org/2000/svg">
                     <text x="0" y="28" font-family="Arial, sans-serif" font-weight="bold" font-size="24" fill="#ffffff" letter-spacing="-0.5">amazon</text>
                     <text x="92" y="28" font-family="Arial, sans-serif" font-size="24" fill="#00a8e1" letter-spacing="-0.5">relay</text>
@@ -485,6 +909,31 @@
         </div>
 
         <div class="form-group">
+            <div class="section-title"><i class="ph ph-chart-line-up"></i> Interfaz</div>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.875rem; cursor: pointer; margin-bottom: 8px;">
+                <input type="checkbox" id="toggle-timeline" checked style="accent-color: var(--amz-orange); width: 16px; height: 16px;">
+                Mostrar Línea de Tiempo
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.875rem; cursor: pointer; margin-bottom: 8px;">
+                <input type="checkbox" id="toggle-notifications" checked style="accent-color: var(--amz-orange); width: 16px; height: 16px;" onchange="document.body.classList.toggle('hide-notifications', !this.checked); if(this.checked && 'Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') Notification.requestPermission();">
+                Notificaciones de Llamada
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.875rem; cursor: pointer; margin-bottom: 8px;">
+                <input type="checkbox" id="toggle-checklists" style="accent-color: var(--amz-orange); width: 16px; height: 16px;" onchange="document.body.classList.toggle('expand-checklists', this.checked)">
+                Desplegar Gestión por Defecto
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.875rem; cursor: pointer;">
+                Tarjetas por fila:
+                <select id="grid-cols-select" class="form-control" style="width: auto; padding: 4px; display: inline-block; margin-left: auto;" onchange="document.getElementById('trips-container').style.setProperty('--grid-cols', this.value)">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3" selected>3</option>
+                    <option value="4">4</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="form-group">
             <div class="section-title"><i class="ph ph-users"></i> Mis Conductores</div>
             <textarea id="drivers-text" class="form-control" placeholder="Escribe un conductor por línea..."></textarea>
             
@@ -492,6 +941,7 @@
                 <i class="ph ph-upload-simple"></i> Cargar desde .txt
             </label>
             <input type="file" id="drivers-txt" accept=".txt" style="display: none;">
+        </div>
         </div>
     </aside>
 
@@ -516,10 +966,12 @@
             </div>
         </div>
         <header class="header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
-            <div>
-                <h1>Panel de Control</h1>
-                <div class="shift-badge" id="shift-label">
-                    <i class="ph ph-clock"></i> Turno: Selecciona una fecha
+            <div style="display: flex; gap: 16px; align-items: center;">
+                <div>
+                    <h1>Panel de Control</h1>
+                    <div class="shift-badge" id="shift-label">
+                        <i class="ph ph-clock"></i> Turno: Selecciona una fecha
+                    </div>
                 </div>
             </div>
             
@@ -537,6 +989,23 @@
             </div>
         </header>
 
+        <!-- Timeline Container -->
+        <div class="timeline-container" id="timeline-container">
+            <div class="timeline-header">
+                <div class="timeline-title"><i class="ph ph-chart-line-up"></i> Línea de Tiempo del Turno <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal; margin-left: 8px;">(Haz clic para ver 24h)</span></div>
+                <div class="timeline-legend">
+                    <span class="legend-item"><span class="legend-dot s-finished"></span> Finalizado</span>
+                    <span class="legend-item"><span class="legend-dot s-ongoing"></span> En Curso</span>
+                    <span class="legend-item"><span class="legend-dot s-upcoming"></span> Próximo</span>
+                </div>
+            </div>
+            <div class="timeline-track" id="timeline-track" onclick="if(!event.target.closest('.timeline-block')) open24HTimeline()" style="cursor: pointer;">
+                <!-- Blocks and Now line injected here -->
+            </div>
+            <div class="timeline-labels" id="timeline-labels">
+            </div>
+        </div>
+
         <!-- Drag & Drop Zone -->
         <div class="dropzone" id="dropzone">
             <i class="ph ph-file-csv"></i>
@@ -549,10 +1018,31 @@
         <div class="trips-grid" id="trips-container">
             <!-- Cards will be injected here -->
         </div>
+
+        <!-- Modal 24h Timeline -->
+        <div class="modal-24h-backdrop" id="modal-24h-backdrop" onclick="close24HTimeline()">
+            <div class="modal-24h-content" onclick="event.stopPropagation()">
+                <button class="modal-close-btn" onclick="close24HTimeline()"><i class="ph ph-x"></i></button>
+                <div style="font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                    <i class="ph ph-calendar-blank" style="color: var(--amz-orange);"></i> Rutas del Día (24 hrs)
+                </div>
+                <div style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 8px;">
+                    Desliza hacia la izquierda o derecha para ver todas las rutas de este día.
+                </div>
+                <div class="modal-24h-track-container" id="modal-24h-track-container">
+                    <div class="timeline-labels" id="modal-24h-labels" style="padding: 0 24px; min-width: 21600px; position: relative; height: 50px; flex-shrink: 0;"></div>
+                    <div class="modal-24h-track" id="modal-24h-track"></div>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script>
         let currentCSVData = null;
+        let currentUpdateInterval = null;
+        let currentShiftStartUTC = null;
+        let currentShiftEndUTC = null;
+        let currentTripsRendered = [];
 
         function normalizeText(text) {
             if (!text) return "";
@@ -567,6 +1057,29 @@
                 }
             }
             return null;
+        }
+
+        function getTripUrl(tripId, status) {
+            if (!tripId) return '#';
+            const encId = encodeURIComponent(tripId);
+            if (status === 'En Curso') return `https://relay.amazon.com/tours/in-transit?ref=owp_nav_tours&itq=${encId}`;
+            if (status === 'Finalizado') return `https://relay.amazon.com/tours/history?ref=owp_nav_tours&hq=${encId}`;
+            return `https://relay.amazon.com/tours/upcoming?ref=owp_nav_tours&usrtb=START_DATE&usrtdrctn=asc&uq=${encId}`;
+        }
+
+        function getMapUrl(tripId, status) {
+            if (!tripId) return '#';
+            const encId = encodeURIComponent(tripId);
+            let path = "history";
+            let mapStatus = "COMPLETED";
+            if (status === "En Curso") {
+                path = "in-transit";
+                mapStatus = "IN_TRANSIT";
+            } else if (status === "Próximo") {
+                path = "upcoming";
+                mapStatus = "PLANNED";
+            }
+            return `https://relay.amazon.com/tours/${path}/map?ref=owp_nav_tours&uq=${encId}&m=trip&q=${encId}&status=${mapStatus}&preset=next_seven_days&column=scheduled_end&viewId=NA%3AVR%3A${encId}`;
         }
         
         function formatVET(vetUtcDate) {
@@ -712,6 +1225,16 @@
         document.getElementById('custom-start').addEventListener('change', processData);
         document.getElementById('custom-end').addEventListener('change', processData);
         
+        document.getElementById('toggle-timeline').addEventListener('change', (e) => {
+            const tlContainer = document.getElementById('timeline-container');
+            if (e.target.checked && currentCSVData) {
+                processData();
+            } else {
+                tlContainer.classList.remove('show');
+                setTimeout(() => tlContainer.style.display = 'none', 300);
+            }
+        });
+
         driversTextArea.addEventListener('input', (e) => {
             localStorage.setItem('relay_drivers', e.target.value);
             processData();
@@ -810,8 +1333,8 @@
                 }
                 let departureOriginal = depTime ? `${depTime} ${depDebug}` : null;
                 
-                if (i === 1) start = departure || arrival; 
-                if (arrival || departure) end = arrival || departure; 
+                if (i === 1) start = arrival || departure; 
+                if (arrival || departure) end = departure || arrival; 
                 
                 stops.push({ 
                     index: i, 
@@ -823,7 +1346,126 @@
             return { start, end, stops };
         }
 
+        function updateCardState(index, tripKeyPrefix, key, isChecked) {
+            localStorage.setItem(`${tripKeyPrefix}_${key}`, isChecked);
+            
+            const card = document.getElementById(`trip-card-${index}`);
+            if (!card) return;
+            
+            const panel = card.querySelector('.management-panel');
+            if (!panel) return;
+            
+            const chks = panel.querySelectorAll('.checklist-group input[type="checkbox"]');
+            const sws = panel.querySelectorAll('.switches-group input[type="checkbox"]');
+            
+            let allChecked = true;
+            let anyChecked = false;
+            chks.forEach(chk => { 
+                if (!chk.checked) allChecked = false;
+                else anyChecked = true;
+            });
+            
+            let anySwitch = false;
+            sws.forEach(sw => { if (sw.checked) anySwitch = true; });
+            
+            card.classList.remove('bg-success', 'bg-warning', 'bg-danger');
+            
+            if (anySwitch) {
+                card.classList.add('bg-danger');
+            } else if (allChecked) {
+                card.classList.add('bg-success');
+            } else if (anyChecked) {
+                card.classList.add('bg-warning');
+            }
+        }
+
+        function playNotificationSound() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(880, ctx.currentTime);
+                gain1.gain.setValueAtTime(0, ctx.currentTime);
+                gain1.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.05);
+                gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start(ctx.currentTime);
+                osc1.stop(ctx.currentTime + 0.5);
+                
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(1108.73, ctx.currentTime + 0.15);
+                gain2.gain.setValueAtTime(0, ctx.currentTime + 0.15);
+                gain2.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.2);
+                gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.0);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start(ctx.currentTime + 0.15);
+                osc2.stop(ctx.currentTime + 1.0);
+            } catch (e) {
+                console.log("Audio no soportado");
+            }
+        }
+
+        function sendSystemNotification(driverName, timeStr) {
+            if (!("Notification" in window)) return;
+            const title = "¡Alerta de Arrival!";
+            const options = {
+                body: `Llamar ahora a ${driverName}.\nLlega a las ${timeStr} (en 1 hora).`,
+                icon: "https://upload.wikimedia.org/wikipedia/commons/4/4a/Amazon_icon.svg"
+            };
+
+            if (Notification.permission === "granted") {
+                new Notification(title, options);
+            } else if (Notification.permission !== "denied") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") new Notification(title, options);
+                });
+            }
+        }
+
+        function showNotification(driverName, arrivalDateObj) {
+            const timeStr = formatVET(arrivalDateObj);
+            
+            playNotificationSound();
+            sendSystemNotification(driverName, timeStr);
+
+            let container = document.getElementById('notifications-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'notifications-container';
+                container.className = 'notifications-container';
+                document.body.appendChild(container);
+            }
+            
+            const notif = document.createElement('div');
+            notif.className = 'notification-item';
+            
+            notif.innerHTML = `
+                <i class="ph ph-x close-btn" onclick="this.parentElement.remove()"></i>
+                <div style="font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                    <i class="ph ph-bell-ringing" style="color: var(--amz-orange); font-size: 1.2rem;"></i>
+                    ¡Alerta de Arrival!
+                </div>
+                <div style="font-size: 0.875rem;">
+                    Recordatorio: Llamar ahora a <strong>${driverName}</strong>.<br>
+                    Arrival programado para las <strong>${timeStr}</strong> (en 1 hora).
+                </div>
+            `;
+            
+            container.appendChild(notif);
+        }
+
         function processData() {
+            clearInterval(currentUpdateInterval);
+            currentTripsRendered = [];
+            
             if (!currentCSVData) return; 
 
             const shiftDateStr = shiftDateInput.value;
@@ -942,9 +1584,14 @@
                 let status = "Próximo";
                 let statusClass = "s-upcoming";
                 
-                const browserNow = new Date();
-                const nowOffsetHours = browserNow.getTimezoneOffset() / 60;
-                const vetNowUTC = new Date(browserNow.getTime() + (nowOffsetHours * 60 * 60 * 1000) - (4 * 60 * 60 * 1000));
+                const currentVET = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Caracas"}));
+                const vetNowUTC = new Date(Date.UTC(
+                    currentVET.getFullYear(),
+                    currentVET.getMonth(),
+                    currentVET.getDate(),
+                    currentVET.getHours(),
+                    currentVET.getMinutes()
+                ));
                 
                 if (start && start.getTime() <= vetNowUTC.getTime() && end && end.getTime() >= vetNowUTC.getTime()) {
                     status = "En Curso";
@@ -955,18 +1602,61 @@
                 }
                 
                 const rawTripId = getVal(row, 'Trip ID') || '';
-                const tripIdHtml = rawTripId 
-                    ? `<a href="https://relay.amazon.com/tours/upcoming?ref=owp_nav_tours&usrtb=START_DATE&usrtdrctn=asc&uq=${encodeURIComponent(rawTripId)}" target="_blank" class="trip-link">${rawTripId} <i class="ph ph-arrow-square-out" style="font-size: 0.8rem;"></i></a>`
-                    : 'N/A';
+                
+                let firstArrivalTimeMs = null;
+                if (firstArrivalObj && firstArrivalObj.arrival) {
+                    firstArrivalTimeMs = firstArrivalObj.arrival.getTime();
+                }
 
-                tripsToRender.push({ row, driverNameRaw, tripIdHtml, start, end, stops, status, statusClass, firstArrivalStr, reminderHtml });
+                tripsToRender.push({ row, driverNameRaw, rawTripId, start, end, stops, status, statusClass, firstArrivalStr, reminderHtml, firstArrivalTimeMs });
             });
 
             tripsToRender.sort((a, b) => (a.start ? a.start.getTime() : 0) - (b.start ? b.start.getTime() : 0));
 
-            tripsToRender.forEach(trip => {
+            tripsToRender.forEach((trip, index) => {
+                currentTripsRendered.push({
+                    index: index,
+                    start: trip.start,
+                    end: trip.end,
+                    rawTripId: trip.rawTripId,
+                    firstArrivalTimeMs: trip.firstArrivalTimeMs,
+                    driverNameRaw: trip.driverNameRaw
+                });
+                
+                const shiftDateStr = shiftDateInput.value;
+                const tripKeyPrefix = `trip_${trip.rawTripId}_${shiftDateStr}`;
+                const chkNotified = localStorage.getItem(`${tripKeyPrefix}_notified`) === 'true' ? 'checked' : '';
+                const chkReported = localStorage.getItem(`${tripKeyPrefix}_reported`) === 'true' ? 'checked' : '';
+                const chkDeparted = localStorage.getItem(`${tripKeyPrefix}_departed`) === 'true' ? 'checked' : '';
+                
+                const swNoResponse = localStorage.getItem(`${tripKeyPrefix}_noresponse`) === 'true' ? 'checked' : '';
+                const swLate = localStorage.getItem(`${tripKeyPrefix}_late`) === 'true' ? 'checked' : '';
+
+                let initialBgClass = '';
+                if (swNoResponse || swLate) initialBgClass = 'bg-danger';
+                else if (chkNotified && chkReported && chkDeparted) initialBgClass = 'bg-success';
+                else if (chkNotified || chkReported || chkDeparted) initialBgClass = 'bg-warning';
+
+                const managementHtml = `
+                    <button class="management-toggle" onclick="this.nextElementSibling.classList.toggle('show');">
+                        Controles de Gestión <i class="ph ph-caret-down"></i>
+                    </button>
+                    <div class="management-panel" id="management-panel-${index}">
+                        <div class="checklist-group">
+                            <label><input type="checkbox" onchange="updateCardState(${index}, '${tripKeyPrefix}', 'notified', this.checked)" ${chkNotified}> Ya le notifiqué</label>
+                            <label><input type="checkbox" onchange="updateCardState(${index}, '${tripKeyPrefix}', 'reported', this.checked)" ${chkReported}> Ya se reportó</label>
+                            <label><input type="checkbox" onchange="updateCardState(${index}, '${tripKeyPrefix}', 'departed', this.checked)" ${chkDeparted}> Ya está en su lugar de partida</label>
+                        </div>
+                        <div class="switches-group">
+                            <label class="switch-label"><input type="checkbox" onchange="updateCardState(${index}, '${tripKeyPrefix}', 'noresponse', this.checked)" ${swNoResponse}> No responde</label>
+                            <label class="switch-label"><input type="checkbox" onchange="updateCardState(${index}, '${tripKeyPrefix}', 'late', this.checked)" ${swLate}> Va tarde</label>
+                        </div>
+                    </div>
+                `;
+
                 const card = document.createElement('div');
-                card.className = 'trip-card';
+                card.className = `trip-card ${initialBgClass}`;
+                card.id = `trip-card-${index}`;
 
                 let stopsHtml = trip.stops.map(stop => `
                     <div class="stop-item">
@@ -995,10 +1685,13 @@
                     <div class="trip-header">
                         <div>
                             <div class="driver-name"><i class="ph ph-user-circle"></i> ${trip.driverNameRaw}</div>
-                            <div class="trip-id">ID: ${trip.tripIdHtml}</div>
+                            <div class="trip-id">ID: ${trip.rawTripId ? `<a href="${getTripUrl(trip.rawTripId, trip.status)}" id="trip-link-${index}" target="_blank" class="trip-link">${trip.rawTripId} <i class="ph ph-arrow-square-out" style="font-size: 0.8rem;"></i></a>` : 'N/A'}</div>
                         </div>
                         <div style="text-align: right;">
-                            <div class="status-pill ${trip.statusClass}">${trip.status}</div>
+                            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+                                <div class="status-pill ${trip.statusClass}" id="status-pill-${index}">${trip.status}</div>
+                                ${trip.rawTripId ? `<a href="${getMapUrl(trip.rawTripId, trip.status)}" id="map-link-${index}" target="_blank" class="map-link" title="Ver Mapa en Amazon Relay"><i class="ph ph-map-pin"></i></a>` : ''}
+                            </div>
                             <div class="final-arrival">
                                 Arrival a las ${trip.firstArrivalStr}
                             </div>
@@ -1006,6 +1699,7 @@
                     </div>
                     
                     ${trip.reminderHtml}
+                    ${managementHtml}
 
                     <button class="stops-toggle" onclick="toggleStops(this)">
                         Ver Itinerario (${trip.stops.length} paradas) <i class="ph ph-caret-down"></i>
@@ -1017,7 +1711,493 @@
                 
                 container.appendChild(card);
             });
+
+            // Timeline Generation
+            const tContainer = document.getElementById('timeline-container');
+            const tTrack = document.getElementById('timeline-track');
+            const showTimeline = document.getElementById('toggle-timeline').checked;
+
+            if (tripsToRender.length === 0 || !showTimeline) {
+                tContainer.classList.remove('show');
+                tContainer.style.display = 'none';
+            } else {
+                tContainer.style.display = '';
+                tContainer.classList.add('show');
+                
+                tTrack.innerHTML = '';
+                
+                const durationMs = shiftEndUTC.getTime() - shiftStartUTC.getTime();
+                
+                let lanes = []; // For overlap handling
+                let blocks = [];
+                
+                tripsToRender.forEach((trip, index) => {
+                    if (!trip.start || !trip.end) return;
+                    
+                    let sTime = trip.start.getTime();
+                    let eTime = trip.end.getTime();
+                    
+                    if (eTime <= shiftStartUTC.getTime() || sTime >= shiftEndUTC.getTime()) return;
+                    
+                    let startPct = ((sTime - shiftStartUTC.getTime()) / durationMs) * 100;
+                    let endPct = ((eTime - shiftStartUTC.getTime()) / durationMs) * 100;
+                    
+                    startPct = Math.max(0, startPct);
+                    endPct = Math.min(100, endPct);
+                    let widthPct = endPct - startPct;
+                    if (widthPct <= 0) return;
+                    
+                    let lane = 0;
+                    while (lanes[lane] !== undefined && lanes[lane] > startPct) {
+                        lane++;
+                    }
+                    lanes[lane] = endPct;
+                    
+                    let tbClass = 'tb-upcoming';
+                    if (trip.status === 'En Curso') tbClass = 'tb-ongoing';
+                    if (trip.status === 'Finalizado') tbClass = 'tb-finished';
+                    
+                    const block = document.createElement('div');
+                    block.className = `timeline-block ${tbClass}`;
+                    block.id = `timeline-block-${index}`;
+                    block.style.left = `${startPct}%`;
+                    block.style.width = `${widthPct}%`;
+                    block.style.top = `${lane * 36 + 6}px`;
+                    block.style.height = `28px`;
+                    
+                    const isShort = widthPct < 8;
+                    const firstName = trip.driverNameRaw.split(' ')[0] || '';
+                    const originName = trip.stops[0] ? trip.stops[0].name.substring(0, 20) : 'Origen';
+                    const destName = trip.stops[trip.stops.length - 1] ? trip.stops[trip.stops.length - 1].name.substring(0, 20) : 'Destino';
+                    
+                    block.innerHTML = `
+                        <div class="timeline-block-text">${isShort ? '' : firstName}</div>
+                        <div class="tooltip">
+                            <strong>${trip.driverNameRaw}</strong>
+                            <span style="color:#aaa">${originName} &rarr; ${destName}</span>
+                            <span>Inicio: ${formatVET(trip.start)}</span>
+                            <span>Fin: ${formatVET(trip.end)}</span>
+                            <span style="color:var(--amz-orange)">Estado: ${trip.status}</span>
+                        </div>
+                    `;
+                    
+                    block.addEventListener('click', () => {
+                        const card = document.getElementById(`trip-card-${index}`);
+                        if (card) {
+                            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            card.style.transition = 'box-shadow 0.3s, border-color 0.3s, transform 0.3s';
+                            card.style.transform = 'scale(1.02)';
+                            card.style.boxShadow = '0 0 20px rgba(255, 153, 0, 0.4)';
+                            card.style.borderColor = 'var(--amz-orange)';
+                            setTimeout(() => {
+                                card.style.transform = '';
+                                card.style.boxShadow = '';
+                                card.style.borderColor = '';
+                            }, 1500);
+                        }
+                    });
+                    
+                    blocks.push(block);
+                });
+                
+                tTrack.style.height = `${Math.max(1, lanes.length) * 36 + 12}px`;
+                blocks.forEach(b => tTrack.appendChild(b));
+                
+                let labelsHtml = '';
+                let hourStep = 1;
+                if (durationMs > 12 * 60 * 60 * 1000) hourStep = 3;
+                else if (durationMs > 8 * 60 * 60 * 1000) hourStep = 2;
+                
+                let currentMark = new Date(shiftStartUTC.getTime());
+                if (currentMark.getUTCMinutes() > 0 || currentMark.getUTCSeconds() > 0) {
+                    currentMark.setUTCHours(currentMark.getUTCHours() + 1, 0, 0, 0);
+                }
+                
+                const addTick = (dateObj, forcePct = null, align = 'center') => {
+                    let pct = forcePct !== null ? forcePct : ((dateObj.getTime() - shiftStartUTC.getTime()) / durationMs) * 100;
+                    if (pct < 0 || pct > 100) return;
+                    
+                    let h = dateObj.getUTCHours();
+                    let m = dateObj.getUTCMinutes();
+                    let ampm = h >= 12 ? 'PM' : 'AM';
+                    let h12 = h % 12;
+                    if (h12 === 0) h12 = 12;
+                    let mStr = m > 0 ? `:${m.toString().padStart(2,'0')}` : '';
+                    let timeText = `${h12}${mStr} ${ampm}`;
+                    
+                    let transform = 'translateX(-50%)';
+                    let leftStr = `left: ${pct}%`;
+                    if (align === 'left') { transform = 'none'; leftStr = `left: 0`; }
+                    if (align === 'right') { transform = 'none'; leftStr = `right: 0; left: auto`; }
+                    
+                    if (align === 'center' && (pct < 4 || pct > 96)) return;
+                    
+                    labelsHtml += `<div style="position: absolute; ${leftStr}; transform: ${transform}; text-align: center; color: var(--text-muted); font-size: 0.75rem; font-family: monospace; white-space: nowrap;">
+                        <div style="width: 1px; height: 4px; background: var(--border); margin: 0 auto 4px; display: ${align === 'center' ? 'block' : 'none'};"></div>
+                        ${timeText}
+                    </div>`;
+                };
+                
+                addTick(shiftStartUTC, 0, 'left');
+                addTick(shiftEndUTC, 100, 'right');
+                
+                while (currentMark.getTime() < shiftEndUTC.getTime()) {
+                    addTick(currentMark);
+                    currentMark.setUTCHours(currentMark.getUTCHours() + hourStep);
+                }
+                
+                const tLabels = document.getElementById('timeline-labels');
+                tLabels.style.position = 'relative';
+                tLabels.style.height = '20px';
+                tLabels.style.display = 'block';
+                tLabels.innerHTML = labelsHtml;
+            }
+            
+            currentShiftStartUTC = shiftStartUTC;
+            currentShiftEndUTC = shiftEndUTC;
+            currentUpdateInterval = setInterval(updateRealTime, 60000);
+            updateRealTime();
         }
+        
+        function updateRealTime() {
+            if (!currentCSVData || !currentShiftStartUTC || !currentShiftEndUTC) return;
+            
+            const currentVET = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Caracas"}));
+            const vetNowUTC = new Date(Date.UTC(
+                currentVET.getFullYear(),
+                currentVET.getMonth(),
+                currentVET.getDate(),
+                currentVET.getHours(),
+                currentVET.getMinutes()
+            ));
+            const vetNowMs = vetNowUTC.getTime();
+
+            const durationMs = currentShiftEndUTC.getTime() - currentShiftStartUTC.getTime();
+            
+            const tTrack = document.getElementById('timeline-track');
+            if (tTrack) {
+                let nowLine = document.getElementById('timeline-now-line');
+                if (vetNowMs >= currentShiftStartUTC.getTime() && vetNowMs <= currentShiftEndUTC.getTime()) {
+                    let nowPct = ((vetNowMs - currentShiftStartUTC.getTime()) / durationMs) * 100;
+                    if (!nowLine) {
+                        nowLine = document.createElement('div');
+                        nowLine.className = 'timeline-now';
+                        nowLine.id = 'timeline-now-line';
+                        tTrack.appendChild(nowLine);
+                    }
+                    
+                    let h12 = currentVET.getHours() % 12 || 12;
+                    let ampm = currentVET.getHours() >= 12 ? 'PM' : 'AM';
+                    let minStr = currentVET.getMinutes().toString().padStart(2, '0');
+                    let timeStr = `${h12}:${minStr} ${ampm}`;
+                    nowLine.innerHTML = `<div class="tooltip-now">Hora actual: ${timeStr}</div>`;
+                    
+                    nowLine.style.left = `${nowPct}%`;
+                } else if (nowLine) {
+                    nowLine.remove();
+                }
+            }
+
+            currentTripsRendered.forEach(trip => {
+                if (!trip.start || !trip.end) return;
+                
+                let newStatus = "Próximo";
+                let newClass = "s-upcoming";
+                let newTbClass = "tb-upcoming";
+                
+                if (trip.start.getTime() <= vetNowMs && trip.end.getTime() >= vetNowMs) {
+                    newStatus = "En Curso";
+                    newClass = "s-ongoing";
+                    newTbClass = "tb-ongoing";
+                } else if (trip.end.getTime() < vetNowMs) {
+                    newStatus = "Finalizado";
+                    newClass = "s-finished";
+                    newTbClass = "tb-finished";
+                }
+                
+                const pill = document.getElementById(`status-pill-${trip.index}`);
+                if (pill && pill.textContent !== newStatus) {
+                    pill.textContent = newStatus;
+                    pill.className = `status-pill ${newClass}`;
+                    
+                    const link = document.getElementById(`trip-link-${trip.index}`);
+                    if (link && trip.rawTripId) {
+                        link.href = getTripUrl(trip.rawTripId, newStatus);
+                    }
+                    
+                    const mapLink = document.getElementById(`map-link-${trip.index}`);
+                    if (mapLink && trip.rawTripId) {
+                        mapLink.href = getMapUrl(trip.rawTripId, newStatus);
+                    }
+                }
+                
+                const block = document.getElementById(`timeline-block-${trip.index}`);
+                if (block && !block.className.includes(newTbClass)) {
+                    block.className = `timeline-block ${newTbClass}`;
+                    const statusSpan = block.querySelector('.tooltip span:last-child');
+                    if (statusSpan) {
+                        statusSpan.textContent = `Estado: ${newStatus}`;
+                    }
+                }
+                
+                if (trip.firstArrivalTimeMs) {
+                    const timeDiffMs = trip.firstArrivalTimeMs - vetNowMs;
+                    if (timeDiffMs <= 3600000 && timeDiffMs > 0) {
+                        const shiftDateStr = document.getElementById('shift-date').value;
+                        const notifKey = `notified_${trip.rawTripId}_${shiftDateStr}`;
+                        if (localStorage.getItem(notifKey) !== 'true') {
+                            showNotification(trip.driverNameRaw, new Date(trip.firstArrivalTimeMs));
+                            localStorage.setItem(notifKey, 'true');
+                        }
+                    }
+                }
+            });
+        }
+
+        function open24HTimeline() {
+            document.getElementById('modal-24h-backdrop').classList.add('show');
+            render24HTimeline();
+        }
+
+        function close24HTimeline() {
+            document.getElementById('modal-24h-backdrop').classList.remove('show');
+        }
+
+        function render24HTimeline() {
+            if (!currentCSVData) return;
+            
+            const shiftDateStr = shiftDateInput.value;
+            if (!shiftDateStr) return;
+            
+            let [y, m, d] = shiftDateStr.split('-');
+            y = parseInt(y, 10);
+            m = parseInt(m, 10) - 1;
+            d = parseInt(d, 10);
+            
+            const dayStartUTC = new Date(Date.UTC(y, m, d - 1, 0, 0));
+            const dayEndUTC = new Date(Date.UTC(y, m, d + 7, 23, 59, 59));
+            const durationMs = dayEndUTC.getTime() - dayStartUTC.getTime();
+            
+            const currentVET = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Caracas"}));
+            const vetNowUTC = new Date(Date.UTC(
+                currentVET.getFullYear(),
+                currentVET.getMonth(),
+                currentVET.getDate(),
+                currentVET.getHours(),
+                currentVET.getMinutes()
+            ));
+            const vetNowMs = vetNowUTC.getTime();
+            
+            const driversText = driversTextArea.value;
+            const myDrivers = driversText.split('\n')
+                .map(drv => normalizeText(drv))
+                .filter(drv => drv.length > 0);
+            
+            let allTrips = [];
+            
+            currentCSVData.forEach(row => {
+                const driverNameRaw = getVal(row, 'Driver Name') || row['Driver Name'] || '';
+                const driverNorm = normalizeText(driverNameRaw);
+                
+                if (!driverNorm) return;
+                
+                let isMyDriver = myDrivers.length === 0;
+                if (myDrivers.length > 0) {
+                    isMyDriver = myDrivers.some(md => driverNorm.includes(md) || md.includes(driverNorm));
+                }
+                if (!isMyDriver && myDrivers.length > 0) return;
+                
+                const rawTripId = getVal(row, 'Trip ID') || row['Trip ID'] || '';
+                const status = getVal(row, 'Status') || row['Status'] || 'Próximo';
+                
+                const { start, end, stops } = extractTripInfo(row);
+                
+                if (!start || !end) return;
+                if (end.getTime() < dayStartUTC.getTime() || start.getTime() > dayEndUTC.getTime()) return;
+                
+                allTrips.push({
+                    driverNameRaw, rawTripId, status, start, end, stops
+                });
+            });
+            
+            allTrips.sort((a, b) => a.start.getTime() - b.start.getTime());
+            
+            const track = document.getElementById('modal-24h-track');
+            const labels = document.getElementById('modal-24h-labels');
+            track.innerHTML = '';
+            labels.innerHTML = '';
+            
+            let lanes = [];
+            
+            allTrips.forEach((trip, index) => {
+                let sTime = Math.max(trip.start.getTime(), dayStartUTC.getTime());
+                let eTime = Math.min(trip.end.getTime(), dayEndUTC.getTime());
+                
+                let startPct = ((sTime - dayStartUTC.getTime()) / durationMs) * 100;
+                let endPct = ((eTime - dayStartUTC.getTime()) / durationMs) * 100;
+                let widthPct = endPct - startPct;
+                if (widthPct <= 0) return;
+                
+                let lane = 0;
+                while (lanes[lane] !== undefined && lanes[lane] > startPct) {
+                    lane++;
+                }
+                lanes[lane] = endPct;
+                
+                trip._lane = lane;
+                trip._startPct = startPct;
+                trip._widthPct = widthPct;
+            });
+            
+            const totalLanes = lanes.length || 1;
+            
+            const lanesContainer = document.createElement('div');
+            lanesContainer.style.position = 'absolute';
+            lanesContainer.style.top = '10px'; 
+            lanesContainer.style.height = 'calc(100% - 20px)'; 
+            lanesContainer.style.left = '0';
+            lanesContainer.style.right = '0';
+            track.appendChild(lanesContainer);
+            
+            allTrips.forEach((trip) => {
+                if (trip._lane === undefined) return;
+                
+                let dynamicStatus = "Próximo";
+                let tbClass = "tb-upcoming";
+                if (trip.start.getTime() <= vetNowMs && trip.end.getTime() >= vetNowMs) {
+                    dynamicStatus = "En Curso";
+                    tbClass = "tb-ongoing";
+                } else if (trip.end.getTime() < vetNowMs) {
+                    dynamicStatus = "Finalizado";
+                    tbClass = "tb-finished";
+                }
+                
+                const block = document.createElement('div');
+                block.className = `timeline-block ${tbClass}`;
+                block.style.left = `${trip._startPct}%`;
+                block.style.width = `${trip._widthPct}%`;
+                
+                let pctTop = (trip._lane / totalLanes) * 100;
+                let pctHeight = (0.85 / totalLanes) * 100;
+                
+                block.style.top = `${pctTop}%`;
+                block.style.height = `${pctHeight}%`;
+                block.style.minHeight = '3px';
+                
+                const firstName = trip.driverNameRaw.split(' ')[0] || '';
+                const originName = trip.stops[0] ? trip.stops[0].name.substring(0, 20) : 'Origen';
+                const destName = trip.stops[trip.stops.length - 1] ? trip.stops[trip.stops.length - 1].name.substring(0, 20) : 'Destino';
+                
+                let tooltipClass = pctTop < 25 ? "tooltip tooltip-down" : "tooltip";
+                
+                block.innerHTML = `
+                    <div class="timeline-block-text">${firstName}</div>
+                    <div class="${tooltipClass}">
+                        <strong>${trip.driverNameRaw}</strong>
+                        <span style="color:#aaa">${originName} &rarr; ${destName}</span>
+                        <span>Inicio: ${formatVET(trip.start)}</span>
+                        <span>Fin: ${formatVET(trip.end)}</span>
+                        <span style="color:var(--amz-orange)">Estado: ${dynamicStatus}</span>
+                    </div>
+                `;
+                
+                lanesContainer.appendChild(block);
+            });
+            
+            track.style.height = `100%`;
+            
+            let currentMark = new Date(dayStartUTC.getTime());
+            let labelsHtml = '';
+            const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            
+            while (currentMark.getTime() <= dayEndUTC.getTime()) {
+                let pct = ((currentMark.getTime() - dayStartUTC.getTime()) / durationMs) * 100;
+                let h = currentMark.getUTCHours();
+                let ampm = h >= 12 ? 'PM' : 'AM';
+                let h12 = h % 12 || 12;
+                let timeText = `${h12}:00 ${ampm}`;
+                
+                if (h === 0) {
+                    let dayLine = document.createElement('div');
+                    dayLine.style.position = 'absolute';
+                    dayLine.style.left = `${pct}%`;
+                    dayLine.style.top = '0';
+                    dayLine.style.bottom = '0';
+                    dayLine.style.width = '1px';
+                    dayLine.style.background = 'rgba(255,255,255,0.15)';
+                    dayLine.style.zIndex = '0';
+                    dayLine.style.pointerEvents = 'none';
+                    track.appendChild(dayLine);
+                    
+                    labelsHtml += `
+                        <div style="position: absolute; left: ${pct}%; top: -4px; margin-left: 8px; color: var(--amz-orange); font-size: 0.95rem; font-weight: 800; white-space: nowrap;">
+                            <i class="ph ph-calendar"></i> ${days[currentMark.getUTCDay()]} ${currentMark.getUTCDate()} ${months[currentMark.getUTCMonth()]}
+                        </div>
+                    `;
+                }
+                
+                labelsHtml += `<div style="position: absolute; left: ${pct}%; bottom: -4px; transform: translateX(-50%); text-align: center; color: var(--text-muted); font-size: 0.75rem; font-family: monospace; white-space: nowrap;">
+                    ${timeText}
+                    <div style="width: 1px; height: 6px; background: var(--border); margin: 4px auto 0;"></div>
+                </div>`;
+                
+                currentMark.setUTCHours(currentMark.getUTCHours() + 1);
+            }
+            labels.innerHTML = labelsHtml;
+            
+            if (vetNowMs >= dayStartUTC.getTime() && vetNowMs <= dayEndUTC.getTime()) {
+                let nowPct = ((vetNowMs - dayStartUTC.getTime()) / durationMs) * 100;
+                let nowLine = document.createElement('div');
+                nowLine.className = 'timeline-now';
+                nowLine.style.left = `${nowPct}%`;
+                
+                let h12 = currentVET.getHours() % 12 || 12;
+                let ampm = currentVET.getHours() >= 12 ? 'PM' : 'AM';
+                let minStr = currentVET.getMinutes().toString().padStart(2, '0');
+                nowLine.innerHTML = `<div class="tooltip-now">Hora actual: ${h12}:${minStr} ${ampm}</div>`;
+                
+                track.appendChild(nowLine);
+                
+                // Ceder un ciclo de renderizado para asegurar que offsetWidth está disponible
+                setTimeout(() => {
+                    const trackContainer = document.getElementById('modal-24h-track-container');
+                    const scrollX = (track.offsetWidth * (nowPct / 100)) - (trackContainer.offsetWidth / 2);
+                    trackContainer.scrollLeft = Math.max(0, scrollX);
+                }, 10);
+            }
+        }
+
+        const slider = document.getElementById('modal-24h-track-container');
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+
+        slider.addEventListener('mousedown', (e) => {
+            isDown = true;
+            slider.style.cursor = 'grabbing';
+            startX = e.pageX - slider.offsetLeft;
+            scrollLeft = slider.scrollLeft;
+        });
+        slider.addEventListener('mouseleave', () => {
+            isDown = false;
+            slider.style.cursor = 'grab';
+        });
+        slider.addEventListener('mouseup', () => {
+            isDown = false;
+            slider.style.cursor = 'grab';
+        });
+        slider.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            slider.scrollLeft += e.deltaY;
+        });
+        slider.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - slider.offsetLeft;
+            const walk = (x - startX) * 2; 
+            slider.scrollLeft = scrollLeft - walk;
+        });
     </script>
 </body>
 </html>
